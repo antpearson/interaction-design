@@ -1,0 +1,106 @@
+/* =====================================================================
+   Interaction Design: starter stylesheet
+
+   This is a starting point, not a design. The font, the colours and
+   the spacing are placeholders. Change all of it to suit your own
+   story: your visual design is part of what you are marked on.
+   ===================================================================== */
+
+
+/* ---------------------------------------------------------------------
+   COLOURS
+   These are CSS variables (the proper name is "custom properties").
+   You name a value once here, then use it anywhere with var(--name).
+   Change --accent on this one line and everything that uses it changes.
+   Replace these three with your own palette, and add more if you need.
+   --------------------------------------------------------------------- */
+
+:root {
+  --ink:    #1a1a1a;   /* text */
+  --paper:  #ffffff;   /* page background */
+  --accent: #c0392b;   /* links, and anything you want to stand out */
+}
+
+
+/* ---------------------------------------------------------------------
+   BASICS
+   --------------------------------------------------------------------- */
+
+/* Makes padding and borders count as part of an element's width,
+   so a box you set to 300px wide stays 300px wide. */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;                          /* removes the browser's white edge */
+  font-family: "Inter", sans-serif;   /* the Google Font linked in index.html */
+  font-size: 1.125rem;                /* 18px */
+  line-height: 1.6;                   /* space between lines of text */
+  color: var(--ink);
+  background: var(--paper);
+}
+
+/* Stops a large picture being wider than the screen it is on. */
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: var(--accent);
+}
+
+
+/* ---------------------------------------------------------------------
+   THE COVER
+   --------------------------------------------------------------------- */
+
+header {
+  min-height: 100svh;        /* svh = "small viewport height". 100svh is one
+                                full screen. It is like 100vh, but it allows
+                                for the address bar on a phone, so the cover
+                                is never taller than what the reader can see. */
+  display: flex;             /* Flexbox, used here to centre the content */
+  flex-direction: column;    /* stack the heading and paragraphs */
+  justify-content: center;   /* centre them top to bottom */
+  align-items: center;       /* centre them left to right */
+  text-align: center;
+  padding: 2rem;
+  color: var(--paper);       /* the two colours swapped over: light on dark */
+  background: var(--ink);
+}
+
+h1 {
+  margin: 0;
+  font-size: 3rem;
+  line-height: 1.1;
+}
+
+/* Keeps the cover's paragraphs to a readable width. */
+header p {
+  max-width: 38rem;
+}
+
+
+/* ---------------------------------------------------------------------
+   CHAPTERS AND CREDITS
+   --------------------------------------------------------------------- */
+
+.chapter,
+footer {
+  max-width: 40rem;          /* keeps lines of text short enough to read */
+  margin: 0 auto;            /* auto left and right centres the block */
+  padding: 4rem 2rem;
+}
+
+footer {
+  font-size: 1rem;
+}
+
+
+/* ---------------------------------------------------------------------
+   YOUR STYLES
+   Write your own rules below this line.
+   --------------------------------------------------------------------- */
