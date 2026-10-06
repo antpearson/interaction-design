@@ -87,7 +87,18 @@ header p {
 /* ---------------------------------------------------------------------
    CHAPTERS AND CREDITS
    --------------------------------------------------------------------- */
-
+.chapter-figure {
+  display: flex;
+  flex-wrap: wrap;            /* drop to a new line when tight */
+  gap: 3rem;                  /* space between them */
+  align-items: center;        /* line them up vertically */
+  max-width: 70rem;           /* wider than a text chapter */
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  /* border: 2px solid black; */
+}
+.chapter-figure .chapter-text { flex: 1 1 20rem; }
+.chapter-figure figure        { flex: 1 1 24rem; margin: 0; }
 .chapter,
 footer {
   max-width: 40rem;          /* keeps lines of text short enough to read */
