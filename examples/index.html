@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GSAP and ScrollTrigger examples</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    .wrap { max-width: 60rem; margin: 0 auto; padding: 2rem; }
+    .list { list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem; }
+    .list li { padding: 1rem 1.25rem; background: var(--panel); border-left: 6px solid var(--accent); }
+    .list a { font-weight: 700; font-size: 1.1rem; text-decoration: none; }
+    .list a:hover { text-decoration: underline; }
+    .list p { margin: .25rem 0 0; font-size: 1rem; }
+    .list .tags { font-size: .85rem; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: 1rem; }
+    th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid #ddd; vertical-align: top; }
+    th { font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    pre { background: var(--ink); color: #eee; padding: 1rem 1.25rem; overflow: auto; font-size: .9rem; border-radius: 6px; }
+    code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .95em; }
+    .wrap h2 { margin-top: 3rem; }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>GSAP and ScrollTrigger examples</h1>
+    <p>Nineteen small, self-contained pages. Each one does one thing and is commented line by line.
+       Open the page, scroll it, then open the file and read the script at the bottom. Copy what you
+       need into your own <code>js/main.js</code>.</p>
+    <p>Every page loads GSAP from a CDN, so you need to be online. Nothing to install.</p>
+  </header>
+
+  <div class="wrap">
+
+    <h2 id="examples">The examples</h2>
+    <ol class="list">
+      <li><a href="01-reveal-on-scroll.html">01 · Reveal on scroll</a><p>Fade and rise when an element reaches a line. One element, a loop, a staggered list that stays, and a scrubbed version tied to the scrollbar.</p><p class="tags">toggleActions · once · stagger · scrub · utils.toArray</p></li>
+      <li><a href="02-pin-and-scrub.html">02 · Pin a scene and scrub a timeline</a><p>The engine behind scrollytelling: a screen-sized stage held still while a timeline of beats is scrubbed through it.</p><p class="tags">pin · scrub · end: "+=300%" · labels · onUpdate</p></li>
+      <li><a href="03-scroll-progress-dice.html">03 · A marker rolling along the bottom</a><p>An indicator tied to how far through the whole page you are: position, rotation and a number from one progress value.</p><p class="tags">trigger: document · progress · invalidateOnRefresh</p></li>
+      <li><a href="04-sticky-steps.html">04 · Sticky picture, scrolling steps</a><p>Text blocks scroll past a fixed picture and each one changes it when it arrives. The BBC and Pudding pattern.</p><p class="tags">ScrollTrigger.create · onEnter · onEnterBack</p></li>
+      <li><a href="05-pinned-title-and-counter.html">05 · Pinned title, depth counter, darkening background</a><p>Deep Sea style: a title that stays, a counter that reads out scroll depth, a background that darkens. Plus a number that counts up once.</p><p class="tags">pinSpacing: false · endTrigger · tween a plain object · snap</p></li>
+      <li><a href="06-motion-path-timeline.html">06 · A marker following a drawn path</a><p>A route draws itself in while a marker travels along it and labels appear as it passes.</p><p class="tags">MotionPathPlugin · DrawSVGPlugin · SVG</p></li>
+      <li><a href="07-horizontal-scroll.html">07 · A section that scrolls sideways</a><p>Scroll down, the panels move left. Includes triggering things inside the moving panels, and a stacked fallback for phones.</p><p class="tags">pin · containerAnimation · snap · matchMedia breakpoints</p></li>
+      <li><a href="08-deal-reveal-return.html">08 · Deal out, turn over, take back</a><p>A pinned scene and a long labelled timeline with many moving parts: tiles dealt from a pile to four slots, flipped, taken back; tokens and pop-up labels; a centre row that fills one tile at a time.</p><p class="tags">function-based from() values · labels · nested timelines · 3D flip</p></li>
+      <li><a href="09-flip-cards.html">09 · Tiles that flip on hover, tap and scroll</a><p>One property, rotationY, three triggers. Keyboard and touch friendly.</p><p class="tags">paused tween · play/reverse · hover media query</p></li>
+      <li><a href="10-typewriter-text.html">10 · Typewriter text and split-text titles</a><p>Type a sentence letter by letter; make a title's letters rise in one at a time and glow; fade a paragraph in word by word.</p><p class="tags">TextPlugin · SplitText · yoyo repeat</p></li>
+      <li><a href="11-hotspots-and-popups.html">11 · Hotspots on a picture that open pop-ups</a><p>Plus buttons over a drawing, each opening an animated panel with content from a data object. Escape, backdrop and focus handled.</p><p class="tags">paused timeline · autoAlpha · repeat pulse · accessibility</p></li>
+      <li><a href="12-decision-branch.html">12 · Scroll stops until the reader decides</a><p>Two buttons, two different outcome animations, and the rest of the page only exists once a choice is made.</p><p class="tags">branching · ScrollTrigger.refresh() · eventCallback</p></li>
+      <li><a href="13-pick-and-build.html">13 · Pick from columns, build a result</a><p>Choose one from each of three columns and a result card swaps in with a drawing and a sentence. A side panel slides in for more.</p><p class="tags">data-driven · .call() · drawer</p></li>
+      <li><a href="14-glossary-and-tooltips.html">14 · Glossary that expands, terms that explain themselves</a><p>Click a word in the text for a tooltip; click a glossary entry and its definition slides open.</p><p class="tags">height: "auto" · positioning from getBoundingClientRect</p></li>
+      <li><a href="15-draggable-reveal.html">15 · Drag something along a track</a><p>The reader drags a handle; its position drives a paused timeline. Click it for a flip.</p><p class="tags">Draggable · timeline.progress() · keyboard fallback</p></li>
+      <li><a href="16-image-sequence-scrub.html">16 · Scrub through rendered frames</a><p>Blender renders, or any sequence of stills, drawn to a canvas as you scroll. The practical route to 3D.</p><p class="tags">canvas · preload · snap: "frame"</p></li>
+      <li><a href="17-scene-transitions.html">17 · Transitions between scenes</a><p>Crossfade, background colour per section, a sparkle burst, and a fade to black.</p><p class="tags">overwrite · onEnter/onLeaveBack · generated elements</p></li>
+      <li><a href="18-cover-slider.html">18 · A cover with a picture slider</a><p>Dots and arrows crossfade photos with a slow zoom. Optional autoplay.</p><p class="tags">utils.wrap · delayedCall · not scroll-driven</p></li>
+      <li><a href="19-video-scrub.html">19 · Scrub a video with the scrollbar</a><p>Tween currentTime. With a note on how the file must be encoded for it to be smooth.</p><p class="tags">video · loadedmetadata</p></li>
+    </ol>
+
+    <h2 id="which">Which example do I need?</h2>
+    <table>
+      <thead><tr><th>I want…</th><th>Start with</th></tr></thead>
+      <tbody>
+        <tr><td>text or pictures to appear as the reader reaches them</td><td>01, then 04</td></tr>
+        <tr><td>a scene that holds still while things happen in it</td><td>02</td></tr>
+        <tr><td>something that moves along the bottom (or side) as a progress indicator</td><td>03</td></tr>
+        <tr><td>a section title that stays put while content passes under it</td><td>05</td></tr>
+        <tr><td>a number that counts (depth, money, population, years)</td><td>05</td></tr>
+        <tr><td>a timeline with a path and something travelling along it</td><td>06</td></tr>
+        <tr><td>a menu or sequence that slides sideways</td><td>07</td></tr>
+        <tr><td>things handed out, turned over, taken back; tokens and pop-up labels; a long sequence with many parts</td><td>08, 09</td></tr>
+        <tr><td>text that types itself; a big title that animates in</td><td>10</td></tr>
+        <tr><td>a static picture with clickable parts and pop-ups</td><td>11</td></tr>
+        <tr><td>the reader to make a choice that changes what comes next</td><td>12</td></tr>
+        <tr><td>a "make your own" with options and a result</td><td>13</td></tr>
+        <tr><td>definitions for jargon</td><td>14</td></tr>
+        <tr><td>something the reader drags</td><td>15</td></tr>
+        <tr><td>3D models or a product-style turntable</td><td>16</td></tr>
+        <tr><td>a smooth move from one chapter to the next; fade to black; a sparkle</td><td>17</td></tr>
+        <tr><td>a cover with several photos the reader can flick through</td><td>18</td></tr>
+        <tr><td>video controlled by scrolling</td><td>19 (or 16)</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="setup">Adding GSAP to your own project</h2>
+    <p>Put these just before your own script, at the bottom of <code>index.html</code>. Only load the
+       plugins you use. The version number is pinned so your page does not change under you.</p>
+<pre><code>&lt;script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"&gt;&lt;/script&gt;
+&lt;!-- optional plugins, same pattern: MotionPathPlugin, DrawSVGPlugin, TextPlugin,
+     SplitText, Draggable, Flip, ScrollToPlugin … all free since GSAP 3.13 --&gt;
+&lt;script src="js/main.js"&gt;&lt;/script&gt;</code></pre>
+    <p>Then, at the top of <code>js/main.js</code>:</p>
+<pre><code>gsap.registerPlugin(ScrollTrigger);   // and any other plugin you loaded</code></pre>
+
+    <h2 id="pitfalls">Things that go wrong, in order of likelihood</h2>
+    <table>
+      <tbody>
+        <tr><td><strong>Nothing happens, console says "Invalid property scrollTrigger"</strong></td><td>You forgot <code>gsap.registerPlugin(ScrollTrigger)</code>, or the plugin script is missing or loaded after your script.</td></tr>
+        <tr><td><strong>Things fire at the wrong scroll position</strong></td><td>Turn on <code>markers: true</code> and look. Usually an image above the trigger loaded late and pushed everything down. Give images <code>width</code> and <code>height</code> attributes, or call <code>ScrollTrigger.refresh()</code> on <code>window.load</code>.</td></tr>
+        <tr><td><strong>A pinned element jumps or disappears</strong></td><td>Pinning uses <code>position: fixed</code>. It breaks inside any parent with <code>transform</code>, <code>filter</code>, <code>perspective</code> or <code>overflow: hidden</code>. Move the pinned element out, or pin the parent instead.</td></tr>
+        <tr><td><strong>Everything animates at once</strong></td><td>You put one <code>scrollTrigger</code> on a tween that targets many elements. Loop with <code>gsap.utils.toArray()</code> and make one per element (example 01).</td></tr>
+        <tr><td><strong>It works on desktop, breaks on a phone</strong></td><td>Hover does not exist on touch. Address bars resize the viewport. Use <code>gsap.matchMedia()</code> to give phones a simpler version (example 07) and test in the real device, not just the dev-tools emulator.</td></tr>
+        <tr><td><strong>The page stutters</strong></td><td>Animate <code>x</code>, <code>y</code>, <code>scale</code>, <code>rotation</code> and <code>opacity</code>: the browser can do those on the GPU. Avoid <code>width</code>, <code>height</code>, <code>top</code>, <code>left</code>, <code>margin</code> and big <code>box-shadow</code> changes on many elements. Resize your images.</td></tr>
+        <tr><td><strong>Reduced motion</strong></td><td>Some readers have asked their system for less motion. Wrap your animations in <code>gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", …)</code> as every example here does, and make sure the page still makes sense without them.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="docs">Where to read more</h2>
+    <ul>
+      <li><a href="https://gsap.com/docs/v3/Plugins/ScrollTrigger/">ScrollTrigger documentation</a>: every option, with demos.</li>
+      <li><a href="https://gsap.com/resources/get-started/">GSAP: getting started</a>: tweens, timelines, easing, the position parameter.</li>
+      <li><a href="https://gsap.com/docs/v3/GSAP/gsap.matchMedia()/">gsap.matchMedia()</a>: different animations for different screens and preferences.</li>
+      <li><a href="https://gsap.com/community/forums/">The GSAP forums</a>: unusually good, and the maintainers answer.</li>
+    </ul>
+    <p style="margin-top:3rem;color:var(--muted);font-size:.95rem">GSAP is free, including all plugins, under the
+      <a href="https://gsap.com/community/standard-license/">GSAP standard licence</a>. Credit it in your sources block
+      like any other library you use. If you used an AI tool to adapt any of this, log it.</p>
+  </div>
+</body>
+</html>

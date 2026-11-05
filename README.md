@@ -15,6 +15,7 @@ interaction-design-starter/
 ├── js/
 │   └── main.js         empty on purpose, until Week 5
 ├── images/             placeholder graphics. Replace with your own.
+├── examples/           GSAP and ScrollTrigger examples, one technique per file
 ├── ai-use-log.docx     your AI-use log. See below.
 └── README.md           this file
 ```
@@ -24,6 +25,15 @@ interaction-design-starter/
 1. Open the folder in VS Code: **File → Open Folder…**
 2. Install the **Live Server** extension if you have not already.
 3. Right-click `index.html` → **Open with Live Server**.
+
+## GSAP examples
+
+`examples/index.html` is a catalogue of nineteen small, commented GSAP and
+ScrollTrigger examples: reveals, pinned scenes, counters, motion paths,
+horizontal sections, long labelled sequences, flips, typewriter text, hotspots, a branching
+decision, a draggable, an image sequence and more. Open it with Live Server,
+find the one nearest what you want, read the script, and copy what you need
+into `js/main.js`. The catalogue also says what to do when it goes wrong.
 
 ## The AI-use log
 

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>15 · Drag something along a track to reveal the story</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    .drag-wrap { max-width: 56rem; margin: 3rem auto; padding: 0 1rem; }
+    .track {
+      position: relative; height: 90px; border-radius: 45px;
+      background: var(--panel); border: 2px dashed #bbb;
+    }
+    .car {                       /* the handle. Styled like a little vehicle, but it is just a block. */
+      position: absolute; top: 15px; left: 10px;
+      width: 110px; height: 44px; border-radius: 8px 22px 6px 6px;
+      background: var(--accent); cursor: grab; touch-action: none;   /* let the browser know we handle touch */
+    }
+    .car:active { cursor: grabbing; }
+    .car::after {
+      content: ""; position: absolute; left: 14px; right: 14px; bottom: -10px; height: 20px;
+      background: radial-gradient(circle at 10px 10px, var(--ink) 9px, transparent 10px) left/20px 20px no-repeat,
+                  radial-gradient(circle at 10px 10px, var(--ink) 9px, transparent 10px) right/20px 20px no-repeat;
+    }
+    .facts { display: grid; gap: 1rem; margin-top: 2rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+    .fact { padding: 1rem 1.25rem; background: var(--ink); color: var(--paper); border-radius: 8px; opacity: 0; }
+    .hint { color: var(--muted); font-size: .95rem; }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>15 · Drag something along a track to reveal the story</h1>
+    <p>Not every interaction has to be a scroll. <code>Draggable</code> lets the reader pull the handle
+       along the track; its position (0 to 1 across the track) drives a paused timeline, so notes appear
+       as it passes them and disappear if it reverses. Click or tap the handle and it does a flip. Works
+       with mouse, touch and pen. The handle is a block here; make it a vehicle, a figure, a slider knob.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="drag-wrap">
+    <p class="hint">Drag the handle to the right. Click it for a trick.</p>
+    <div class="track">
+      <div class="car" role="slider" aria-label="Drag to move through the story" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"></div>
+    </div>
+    <div class="facts">
+      <div class="fact"><strong>First.</strong> Appears when the handle is a quarter of the way along.</div>
+      <div class="fact"><strong>Second.</strong> Halfway. Drag back and it goes away again.</div>
+      <div class="fact"><strong>Third.</strong> Three quarters. Each note is one tween on a paused timeline.</div>
+      <div class="fact"><strong>Fourth.</strong> The end of the track. The timeline is at progress 1.</div>
+    </div>
+  </div>
+
+  <div class="spacer short"><p>End.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/Draggable.min.js"></script>
+  <script>
+    gsap.registerPlugin(Draggable);
+
+    const car   = document.querySelector(".car");
+    const track = document.querySelector(".track");
+    const facts = gsap.utils.toArray(".fact");
+
+    // The story, as a PAUSED timeline. Its playhead will be set by the drag.
+    const story = gsap.timeline({ paused: true });
+    facts.forEach((fact, i) => {
+      // Each fact fades in over a short stretch, spaced evenly along the timeline.
+      story.to(fact, { opacity: 1, y: 0, duration: 0.2 }, i * 0.25 + 0.05);
+    });
+
+    // How far the car can travel inside the track.
+    const maxX = () => track.clientWidth - car.offsetWidth - 20;   // 20 = 10px padding each side
+
+    Draggable.create(car, {
+      type: "x",                 // horizontal only
+      bounds: { minX: 0, maxX: maxX() },
+      inertia: false,            // true needs InertiaPlugin (also free) for a flick-and-glide feel
+      onDrag: update,
+      onThrowUpdate: update,
+      onPress() { gsap.to(car, { scale: 1.05, duration: 0.15 }); },
+      onRelease() { gsap.to(car, { scale: 1, duration: 0.15 }); },
+    });
+
+    function update() {
+      const progress = gsap.utils.clamp(0, 1, this.x / maxX());
+      story.progress(progress);               // move the playhead to match the car
+      car.setAttribute("aria-valuenow", Math.round(progress * 100));
+    }
+
+    // Keyboard: arrow keys move it too, so it is not drag-only.
+    car.addEventListener("keydown", (e) => {
+      const d = Draggable.get(car);
+      const step = maxX() / 20;
+      let x = gsap.getProperty(car, "x");
+      if (e.key === "ArrowRight") x += step; else if (e.key === "ArrowLeft") x -= step; else return;
+      e.preventDefault();
+      x = gsap.utils.clamp(0, maxX(), x);
+      gsap.to(car, { x, duration: 0.2, onUpdate: () => { d.update(); update.call(d); } });
+    });
+
+    // The flip: a quick timeline on click. Ignore clicks that were really drags.
+    car.addEventListener("click", () => {
+      if (Draggable.get(car).isDragging) return;
+      gsap.timeline()
+        .to(car, { y: -60, duration: 0.3, ease: "power2.out" })
+        .to(car, { rotation: "+=360", duration: 0.5, ease: "power1.inOut" }, "<")
+        .to(car, { y: 0, duration: 0.3, ease: "bounce.out" });
+    });
+
+    // Keep the bounds right if the window changes size.
+    window.addEventListener("resize", () => {
+      Draggable.get(car).applyBounds({ minX: 0, maxX: maxX() });
+    });
+  </script>
+</body>
+</html>

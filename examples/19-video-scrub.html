@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>19 · Scrub a video with the scrollbar</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    .vid { height: 100svh; background: #000; display: grid; place-items: center; position: relative; }
+    .vid video { width: 100%; height: 100%; object-fit: cover; }
+    .vid .cap { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,.5); padding: .5rem 1rem; }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>19 · Scrub a video with the scrollbar</h1>
+    <p>The video does not play; its <code>currentTime</code> is tweened, so scrolling moves through it
+       forwards and backwards. This only feels smooth if the file is encoded for it: every frame a
+       keyframe, no audio, short. Re-encode yours with
+       <code>ffmpeg -i in.mp4 -an -g 1 -crf 23 -movflags +faststart out.mp4</code>. Without that, the
+       browser has to decode from the last keyframe on every scroll step and it stutters. If you
+       cannot re-encode, use the image-sequence approach in example 16 instead.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="spacer"><p>Scroll down ↓</p></div>
+
+  <section class="vid">
+    <!-- muted + playsinline are required for iOS to let scripts control it -->
+    <video src="../images/iss-night-lights.mp4" poster="../images/iss-night-lights.jpg" muted playsinline preload="auto"></video>
+    <p class="cap"><span class="t">0.0</span> s</p>
+  </section>
+
+  <div class="spacer"><p>End.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    const video = document.querySelector("video");
+    const tEl   = document.querySelector(".t");
+
+    // We cannot tween to video.duration until the browser knows it.
+    function setup() {
+      gsap.to(video, {
+        currentTime: video.duration,
+        ease: "none",
+        onUpdate: () => (tEl.textContent = video.currentTime.toFixed(1)),
+        scrollTrigger: {
+          trigger: ".vid",
+          start: "top top",
+          end: "+=300%",         // longer = slower playback per scroll
+          pin: true,
+          scrub: 0.5,
+        },
+      });
+    }
+    if (video.readyState >= 1) setup();                        // metadata already there
+    else video.addEventListener("loadedmetadata", setup, { once: true });
+
+    // Safari sometimes needs the video "touched" once before it will seek.
+    // A silent play().then(pause()) on first user interaction sorts it:
+    document.addEventListener("touchstart", () => { video.play().then(() => video.pause()).catch(() => {}); }, { once: true });
+  </script>
+</body>
+</html>

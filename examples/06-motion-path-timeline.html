@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>06 · A marker following a drawn path down a timeline</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    .timeline { max-width: 60rem; margin: 0 auto; padding: 0 1rem; }
+    .timeline svg { width: 100%; height: auto; overflow: visible; }
+    .route { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
+    /* (no stroke-dasharray here: DrawSVG uses it for the drawing effect, so it would be overridden) */
+    .year  { font: 800 44px/1 "Inter", sans-serif; fill: var(--ink); }
+    .note  { font: 16px/1.4 "Inter", sans-serif; fill: var(--muted); }
+    .ball  { fill: var(--accent); stroke: #fff; stroke-width: 4; }
+    .ball-seam { fill: none; stroke: #fff; stroke-width: 3; }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>06 · A marker following a drawn path down a timeline</h1>
+    <p>Two plugins working together. <code>DrawSVGPlugin</code> draws the route in as you scroll.
+       <code>MotionPathPlugin</code> moves a marker (here a ball) along that same <code>&lt;path&gt;</code>.
+       Year labels fade in as it reaches them. All scrubbed, so it runs backwards too. A route on a map,
+       a journey, a river, a life: same two plugins.</p>
+    <p>To use your own route: draw a path in Illustrator, Figma or Inkscape, export as SVG, and paste the
+       <code>d="…"</code> value into the path below. Keep it inside the same <code>viewBox</code>.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="spacer"><p>Scroll down ↓</p></div>
+
+  <section class="timeline">
+    <svg viewBox="0 0 800 1600" aria-label="A winding timeline from 1990 to 2020">
+      <!-- THE ROUTE. id is used by the script. -->
+      <path id="route" class="route"
+        d="M 120 40 C 120 300, 680 200, 680 480 S 120 700, 120 920 S 680 1140, 680 1380 S 400 1560, 400 1560"/>
+
+      <!-- Year stops along the route. Each group is faded in by the timeline. -->
+      <g class="stop" transform="translate(160 60)"><text class="year">1990</text><text class="note" y="30">Where the story starts.</text></g>
+      <g class="stop" transform="translate(420 470)"><text class="year">2000</text><text class="note" y="30">The first turning point.</text></g>
+      <g class="stop" transform="translate(160 950)"><text class="year">2010</text><text class="note" y="30">Something changes hands.</text></g>
+      <g class="stop" transform="translate(420 1400)"><text class="year">2020</text><text class="note" y="30">Where it is now.</text></g>
+
+      <!-- THE BALL. It starts wherever we put it; MotionPath moves it onto the route. -->
+      <g id="ball">
+        <circle class="ball" r="22"/>
+        <path class="ball-seam" d="M -12 -8 Q 0 0 12 -8 M -12 8 Q 0 0 12 8"/>
+      </g>
+    </svg>
+  </section>
+
+  <div class="spacer"><p>End of the timeline.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/MotionPathPlugin.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/DrawSVGPlugin.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger, MotionPathPlugin, DrawSVGPlugin);
+
+    const stops = gsap.utils.toArray(".stop");
+
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+
+      const tl = gsap.timeline({
+        defaults: { ease: "none" },
+        scrollTrigger: {
+          trigger: ".timeline",
+          start: "top 60%",        // the SVG is tall; begin when its top is 60% down the window...
+          end: "bottom 60%",       // ...and finish when its bottom reaches the same line.
+          scrub: 1,                // so the ball is always roughly level with the reader's eye
+          // markers: true,
+        },
+      });
+
+      // The route draws itself in. "0%" → "100%" of its length.
+      tl.fromTo("#route", { drawSVG: "0%" }, { drawSVG: "100%", duration: 4 }, 0);
+
+      // The ball follows the route over the same 4 "seconds" of scroll.
+      tl.to("#ball", {
+        duration: 4,
+        motionPath: {
+          path: "#route",
+          align: "#route",            // put the ball ON the path's coordinates
+          alignOrigin: [0.5, 0.5],    // ...centred on it, not by its top-left corner
+          autoRotate: true,           // turn to face the direction of travel (a ball rolls)
+        },
+        rotation: "+=720",            // and spin it as well, for a rolling feel
+      }, 0);
+
+      // Year stops fade in when the ball is roughly alongside. The second number
+      // is the POSITION on the timeline: 0 to 4 across the route. Tune by eye.
+      gsap.set(stops, { autoAlpha: 0 });
+      tl.to(stops[0], { autoAlpha: 1, duration: 0.3 }, 0.0)
+        .to(stops[1], { autoAlpha: 1, duration: 0.3 }, 1.1)
+        .to(stops[2], { autoAlpha: 1, duration: 0.3 }, 2.3)
+        .to(stops[3], { autoAlpha: 1, duration: 0.3 }, 3.6);
+
+      // Want a bounce rather than a roll? Replace the motionPath tween with a
+      // series of .to() calls, each with ease "bounce.out", or use the free
+      // MotionPathHelper plugin in the browser to drag a path into shape.
+    });
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      gsap.set(stops, { autoAlpha: 1 });
+      gsap.set("#ball", { motionPath: { path: "#route", align: "#route", alignOrigin: [0.5, 0.5], end: 1 } });
+    });
+  </script>
+</body>
+</html>

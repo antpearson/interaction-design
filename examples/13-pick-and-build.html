@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>13 · Pick from columns, build a result</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    .builder { max-width: 64rem; margin: 2rem auto; padding: 0 1rem; display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+    .col h2 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    .option {
+      display: block; width: 100%; margin-bottom: .5rem; padding: .75rem 1rem; text-align: left;
+      font: inherit; font-weight: 700; cursor: pointer;
+      background: var(--panel); border: 2px solid transparent; border-radius: 8px; color: var(--ink);
+    }
+    .option[aria-pressed="true"] { border-color: var(--accent); background: #fff; }
+
+    .result {
+      padding: 1.5rem; border-radius: 12px; background: var(--ink); color: var(--paper); min-height: 18rem;
+      display: flex; flex-direction: column; gap: .75rem; align-items: center; text-align: center;
+    }
+    .result svg { width: 8rem; height: 8rem; }
+    .result .name { font-size: 1.3rem; font-weight: 800; }
+    .result .placeholder { opacity: .5; }
+    .result .more { margin-top: auto; color: #fff; }
+
+    /* A side panel that slides in from the right. */
+    .drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: min(90vw, 28rem);
+      background: var(--paper); box-shadow: -10px 0 40px rgba(0,0,0,.2); padding: 2rem; overflow: auto;
+      transform: translateX(100%); visibility: hidden; z-index: 20;
+    }
+    .drawer .close { position: absolute; top: 1rem; right: 1rem; }
+    .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.4); visibility: hidden; opacity: 0; z-index: 19; }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>13 · Pick from columns, build a result</h1>
+    <p>A "make your own" interactive: three columns of choices, a fourth that shows what you made.
+       Picking an option pops it, and the result card swaps out and back in with the new drawing and a
+       sentence describing it. A "More" button slides a bigger panel in from the right. The options are
+       a plain object at the top of the script: edit that, not the HTML. Swap the shape for a character,
+       a recipe, an outfit, a route.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="builder">
+    <div class="col" data-group="colour"><h2>Colour</h2></div>
+    <div class="col" data-group="shape"><h2>Shape</h2></div>
+    <div class="col" data-group="size"><h2>Size</h2></div>
+    <div class="col">
+      <h2>Result</h2>
+      <div class="result">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><g class="drawing" transform="translate(50 50)"></g></svg>
+        <div class="name placeholder">Choose one from each column</div>
+        <button class="btn more" hidden>More</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="scrim"></div>
+  <aside class="drawer" aria-label="More about your result" tabindex="-1">
+    <button class="btn close" aria-label="Close">×</button>
+    <h2 class="drawer-title"></h2>
+    <div class="drawer-body"></div>
+  </aside>
+
+  <div class="spacer short"><p>End.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script>
+    // ---- THE DATA. Add or edit entries here. ---------------------------------
+    const DATA = {
+      colour: { Red: "#c0392b", Blue: "#2980b9", Green: "#2d6a4f", Gold: "#e9c46a" },
+      shape: {
+        Circle:   '<circle r="40"/>',
+        Square:   '<rect x="-36" y="-36" width="72" height="72" rx="6"/>',
+        Triangle: '<polygon points="0,-42 42,34 -42,34"/>',
+        Star:     '<polygon points="0,-42 12,-13 42,-13 18,5 27,34 0,17 -27,34 -18,5 -42,-13 -12,-13"/>',
+      },
+      size: { Small: 0.5, Medium: 0.8, Large: 1.1 },
+    };
+    const chosen = { colour: null, shape: null, size: null };
+
+    // Build the option buttons from the data.
+    for (const group of Object.keys(DATA)) {
+      const col = document.querySelector(`.col[data-group="${group}"]`);
+      for (const name of Object.keys(DATA[group])) {
+        const b = document.createElement("button");
+        b.className = "option"; b.textContent = name; b.setAttribute("aria-pressed", "false");
+        b.addEventListener("click", () => pick(group, name, b));
+        col.appendChild(b);
+      }
+    }
+
+    const result  = document.querySelector(".result");
+    const drawing = result.querySelector(".drawing");
+    const nameEl  = result.querySelector(".name");
+    const more    = result.querySelector(".more");
+
+    function pick(group, name, button) {
+      chosen[group] = name;
+      // Un-press the others in this column, press this one, and give it a little pop.
+      button.parentElement.querySelectorAll(".option").forEach((o) => o.setAttribute("aria-pressed", "false"));
+      button.setAttribute("aria-pressed", "true");
+      gsap.fromTo(button, { scale: 0.96 }, { scale: 1, duration: 0.4, ease: "back.out(3)" });
+      updateResult();
+    }
+
+    function describe() {
+      const { colour, shape, size } = chosen;
+      const words = [size, colour, shape].filter(Boolean).map((w) => w.toLowerCase());
+      return words.length ? `A ${words.join(" ")}.` : "Choose one from each column";
+    }
+
+    // Swap the card out, change it while it is invisible, bring it back.
+    // The .call() in the middle runs at exactly that point on the timeline.
+    function updateResult() {
+      const complete = chosen.colour && chosen.shape && chosen.size;
+      gsap.timeline()
+        .to(result, { x: -20, autoAlpha: 0, duration: 0.2, ease: "power1.in" })
+        .call(() => {
+          drawing.innerHTML = chosen.shape ? DATA.shape[chosen.shape] : "";
+          gsap.set(drawing, {
+            fill: chosen.colour ? DATA.colour[chosen.colour] : "#888",
+            scale: chosen.size ? DATA.size[chosen.size] : 0.8,
+            transformOrigin: "center",
+          });
+          nameEl.textContent = describe();
+          nameEl.classList.toggle("placeholder", !words());
+          more.hidden = !complete;
+        })
+        .fromTo(result, { x: 20 }, { x: 0, autoAlpha: 1, duration: 0.35, ease: "power2.out" });
+    }
+    const words = () => Object.values(chosen).some(Boolean);
+
+    // ---- THE DRAWER ------------------------------------------------------------
+    const drawer = document.querySelector(".drawer");
+    const scrim  = document.querySelector(".scrim");
+    const slide = gsap.timeline({ paused: true })
+      .to(scrim, { autoAlpha: 1, duration: 0.25 })
+      .to(drawer, { x: 0, autoAlpha: 1, duration: 0.45, ease: "power3.out" }, "<");
+    // GSAP tweens x from the CSS translateX(100%) start to 0: slides in from the right.
+
+    more.addEventListener("click", () => {
+      drawer.querySelector(".drawer-title").textContent = describe();
+      drawer.querySelector(".drawer-body").innerHTML =
+        `<p>This is where the full write-up for the reader's choice would go: a longer description,
+            a picture, links to read further. It is built from the same <code>chosen</code> object.</p>`;
+      slide.play(); drawer.focus();
+    });
+    const closeDrawer = () => { slide.reverse(); more.focus(); };
+    drawer.querySelector(".close").addEventListener("click", closeDrawer);
+    scrim.addEventListener("click", closeDrawer);
+    document.addEventListener("keydown", (e) => e.key === "Escape" && closeDrawer());
+  </script>
+</body>
+</html>

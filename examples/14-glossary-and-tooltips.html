@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>14 · Glossary that expands, terms that explain themselves</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    /* ---- inline terms in running text ---- */
+    .term {
+      font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer;
+      text-decoration: underline dotted; text-underline-offset: 3px;
+    }
+    .tip {
+      position: absolute; max-width: 18rem; padding: .75rem 1rem; border-radius: 8px;
+      background: var(--ink); color: var(--paper); font-size: .95rem; line-height: 1.4;
+      visibility: hidden; opacity: 0; z-index: 10; pointer-events: none;
+    }
+
+    /* ---- the glossary list ---- */
+    .glossary { max-width: 40rem; margin: 0 auto; padding: 2rem; }
+    .entry { border-top: 1px solid #ddd; }
+    .entry:last-child { border-bottom: 1px solid #ddd; }
+    .entry-btn {
+      display: flex; justify-content: space-between; align-items: center; width: 100%;
+      padding: 1rem 0; font: inherit; font-weight: 700; text-align: left;
+      background: none; border: 0; cursor: pointer; color: var(--ink);
+    }
+    .entry-btn .chev { display: inline-block; transition: none; }
+    .entry-def { height: 0; overflow: hidden; }      /* GSAP animates height: 0 ↔ auto */
+    .entry-def p { margin: 0 0 1rem; color: #333; }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>14 · Glossary that expands, terms that explain themselves</h1>
+    <p>Two ways to deal with jargon. In running text, a dotted word is a button: click it and a small
+       tooltip appears next to it. At the end, a glossary: click a word and its definition slides open
+       (<code>height: auto</code>, which CSS transitions cannot do but GSAP can). Entries also fade in as
+       the list scrolls into view.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <section class="prose">
+    <h2>In the text</h2>
+    <p>A scrolling story is a sequence of <button class="term" data-def="One moment where the page changes as the reader scrolls. One row of your beat sheet.">beats</button>.
+       Each beat has a <button class="term" data-def="The element whose position on the screen starts the animation. Every ScrollTrigger has one.">trigger</button>,
+       and either plays once or is <button class="term" data-def="Tied to the scrollbar: the reader moves the animation forwards and backwards by scrolling.">scrubbed</button>.
+       Big scenes are usually <button class="term" data-def="Held still on the screen while the reader keeps scrolling, so a sequence can play out in one place.">pinned</button>.</p>
+  </section>
+
+  <div class="tip" role="tooltip"></div>
+
+  <div class="spacer short"><p>Scroll down for the glossary ↓</p></div>
+
+  <section class="glossary">
+    <h2>Glossary</h2>
+    <div class="entry"><button class="entry-btn" aria-expanded="false">Tween <span class="chev">▾</span></button><div class="entry-def"><p>One animation of one or more properties from a start value to an end value over a duration.</p></div></div>
+    <div class="entry"><button class="entry-btn" aria-expanded="false">Timeline <span class="chev">▾</span></button><div class="entry-def"><p>A container that sequences tweens. Add labels to it and you can read it like a script.</p></div></div>
+    <div class="entry"><button class="entry-btn" aria-expanded="false">Stagger <span class="chev">▾</span></button><div class="entry-def"><p>The same tween applied to many elements, each starting a little after the last.</p></div></div>
+    <div class="entry"><button class="entry-btn" aria-expanded="false">Easing <span class="chev">▾</span></button><div class="entry-def"><p>How the speed changes across a tween. "power2.out" starts fast and slows; "none" is linear, which is what scrubbed motion wants.</p></div></div>
+    <div class="entry"><button class="entry-btn" aria-expanded="false">Markers <span class="chev">▾</span></button><div class="entry-def"><p>The start and end lines ScrollTrigger can draw on the page while you work. Turn them off before hand-in.</p></div></div>
+  </section>
+
+  <div class="spacer short"><p>End.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    // ---- TOOLTIPS ---------------------------------------------------------------
+    const tip = document.querySelector(".tip");
+    let openTerm = null;
+
+    function showTip(term) {
+      tip.textContent = term.dataset.def;
+      // Position it just under the word, using the word's place on the page.
+      const r = term.getBoundingClientRect();
+      gsap.set(tip, { left: r.left + window.scrollX, top: r.bottom + window.scrollY + 8 });
+      gsap.fromTo(tip, { autoAlpha: 0, y: -6 }, { autoAlpha: 1, y: 0, duration: 0.25, ease: "power2.out" });
+      openTerm = term;
+      term.setAttribute("aria-describedby", "tip");
+    }
+    function hideTip() {
+      gsap.to(tip, { autoAlpha: 0, duration: 0.15 });
+      openTerm = null;
+    }
+    document.querySelectorAll(".term").forEach((term) => {
+      term.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openTerm === term ? hideTip() : showTip(term);
+      });
+    });
+    document.addEventListener("click", hideTip);
+    document.addEventListener("keydown", (e) => e.key === "Escape" && hideTip());
+
+    // ---- ACCORDION ---------------------------------------------------------------
+    document.querySelectorAll(".entry").forEach((entry) => {
+      const btn  = entry.querySelector(".entry-btn");
+      const def  = entry.querySelector(".entry-def");
+      const chev = entry.querySelector(".chev");
+      let open = false;
+      btn.addEventListener("click", () => {
+        open = !open;
+        btn.setAttribute("aria-expanded", open);
+        // height: "auto" is the trick. GSAP measures the natural height for you.
+        gsap.to(def,  { height: open ? "auto" : 0, duration: 0.4, ease: "power2.inOut" });
+        gsap.to(chev, { rotation: open ? 180 : 0, duration: 0.3 });
+      });
+    });
+
+    // ---- STAGGERED ENTRY -----------------------------------------------------------
+    gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", () => {
+      gsap.from(".entry", {
+        y: 20, autoAlpha: 0, duration: 0.5, stagger: 0.08,
+        scrollTrigger: { trigger: ".glossary", start: "top 75%", once: true },
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>12 · Scroll stops until the reader decides</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    .decide { height: 100svh; display: grid; place-items: center; background: #111; color: #fff; text-align: center; }
+    .stage {
+      position: relative; width: min(90vw, 700px); aspect-ratio: 16/9; border-radius: 24px;
+      background: #2b2b2b; box-shadow: inset 0 0 0 6px #3a3a3a;
+      display: grid; place-items: center;
+    }
+    .tiles { position: absolute; display: flex; gap: .6rem; }
+    .hidden-row { top: 12%; }
+    .shown-row  { top: 45%; }
+    .tile {
+      --w: clamp(44px, 7vw, 70px);
+      width: var(--w); aspect-ratio: 1 / 1.4; border-radius: 8px; display: grid; place-items: center;
+      background: #fff; color: #111; font-weight: 800; font-size: clamp(1rem, 2.4vw, 1.6rem);
+      transform-style: preserve-3d; position: relative;
+    }
+    .tile .back { position: absolute; inset: 0; border-radius: 8px; background: repeating-linear-gradient(45deg, #c0392b 0 4px, #8e2a1f 4px 8px); border: 2px solid #fff; backface-visibility: hidden; }
+    .tile .face { backface-visibility: hidden; transform: rotateY(180deg); }
+
+    .choices { position: absolute; bottom: -4.5rem; display: flex; gap: 1rem; opacity: 0; visibility: hidden; }
+    .choices .btn { color: #fff; border-color: #fff; }
+    .choices.is-done { display: none; }   /* removed for good once a choice is made (see script) */
+    .verdict { position: absolute; top: -4rem; font-size: 1.4rem; font-weight: 800; opacity: 0; }
+
+    .after { display: none; }                 /* nothing below exists until a choice is made */
+    .after .outcome { display: none; }
+    .after[data-chosen="open"] .outcome.open, .after[data-chosen="leave"] .outcome.leave { display: block; }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>12 · Scroll stops until the reader decides</h1>
+    <p>A branching beat. The page literally ends at the stage: the sections below it are
+       <code>display: none</code>, so there is nothing to scroll to. Two buttons appear. Each plays a
+       different animation (one turns the hidden tiles over and lifts the matching ones with a glow; the
+       other slides yours away and reveals what you missed), then the matching conclusion is switched on
+       and <code>ScrollTrigger.refresh()</code> tells GSAP the page just got longer. The reader scrolls on.</p>
+    <p>This is simpler and more reliable than fighting the browser with <code>overflow: hidden</code>
+       to "lock" scrolling, and it works on phones. The quiz, the vote, the "which would you choose"
+       are all this pattern.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="spacer"><p>Scroll down to the decision ↓</p></div>
+
+  <section class="decide">
+    <div class="stage">
+      <p class="verdict"></p>
+      <div class="tiles hidden-row" aria-label="Hidden tiles">
+        <div class="tile"><div class="back"></div><div class="face" data-open="★" data-leave="★"></div></div>
+        <div class="tile"><div class="back"></div><div class="face" data-open="★" data-leave="✕"></div></div>
+      </div>
+      <div class="tiles shown-row" aria-label="Your tiles">
+        <div class="tile">★</div><div class="tile">●</div><div class="tile">★</div>
+      </div>
+      <div class="choices">
+        <button class="btn" data-choice="open">Turn them over</button>
+        <button class="btn" data-choice="leave">Leave them</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Everything after the decision. Hidden until chosen. -->
+  <div class="after">
+    <section class="prose outcome open">
+      <h2>You turned them over.</h2>
+      <p>Two more stars. The three that matched rose above the others and glowed: a small animation that
+         tells the reader <em>which</em> ones mattered without a word of explanation.</p>
+    </section>
+    <section class="prose outcome leave">
+      <h2>You left them.</h2>
+      <p>One was a star. You will never know what you might have had. That is the point of the beat: a
+         consequence the reader feels, because they chose it.</p>
+    </section>
+    <section class="prose">
+      <h2>What happened under the hood</h2>
+      <p>The button handler played a timeline, then set a data attribute on this wrapper, set it to
+         <code>display: block</code>, and called <code>ScrollTrigger.refresh()</code>.</p>
+    </section>
+    <div class="spacer"><p>End.</p></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    const after   = document.querySelector(".after");
+    const verdict = document.querySelector(".verdict");
+    const shown   = gsap.utils.toArray(".shown-row .tile");
+    const hidden  = gsap.utils.toArray(".hidden-row .tile");
+
+    // 1. Pin the stage and bring the buttons in at the end of a short scrub.
+    //    (In a real page this is the tail of a long sequence like example 08.)
+    gsap.timeline({
+      scrollTrigger: { trigger: ".decide", start: "top top", end: "+=100%", pin: true, scrub: 1 },
+    })
+      .from(".stage", { scale: 0.9, autoAlpha: 0, duration: 1 })
+      .to(".choices", { autoAlpha: 1, duration: 0.5 });
+    // Because .after is display:none, the document ends right where the pin ends,
+    // so the reader cannot scroll past the buttons. That is the "lock".
+
+    // 2. The two outcomes, each its own timeline.
+    function outcomeOpen() {
+      const stars = [shown[0], shown[2], ...hidden];          // the ones that match
+      return gsap.timeline()
+        .to(hidden, { rotationY: 180, duration: 0.6, stagger: 0.15 })
+        .to(stars, { y: -16, boxShadow: "0 0 0 3px #2ecc71, 0 0 30px #2ecc71", duration: 0.5, stagger: 0.08, ease: "back.out(2)" }, "+=0.3")
+        .to(verdict, { opacity: 1, duration: 0.3, onStart: () => (verdict.textContent = "Four stars. Good call.") });
+    }
+    function outcomeLeave() {
+      return gsap.timeline()
+        .to(shown, { y: 40, autoAlpha: 0, duration: 0.5, stagger: 0.05 })          // yours go away
+        .to(hidden, { rotationY: 180, duration: 0.6, stagger: 0.15 }, "+=0.3")     // the reveal
+        .to(hidden, { rotation: () => gsap.utils.random(-6, 6), duration: 0.3 })
+        .to(verdict, { opacity: 1, duration: 0.3, onStart: () => (verdict.textContent = "One was a star. Too late now.") });
+    }
+
+    // 3. The buttons.
+    document.querySelectorAll("[data-choice]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const choice = btn.dataset.choice;
+
+        // Put the right symbols on the hidden tiles for this branch.
+        hidden.forEach((t) => { const f = t.querySelector(".face"); f.textContent = f.dataset[choice]; });
+
+        // Buttons go away so it cannot be clicked twice. A class, not a tween:
+        // the scrubbed timeline above owns the buttons' opacity and would put
+        // them back the next time ScrollTrigger re-renders it.
+        document.querySelector(".choices").classList.add("is-done");
+
+        const play = choice === "open" ? outcomeOpen() : outcomeLeave();
+
+        // 4. When the outcome has played, extend the page and let them scroll on.
+        play.eventCallback("onComplete", () => {
+          after.dataset.chosen = choice;
+          after.style.display = "block";
+          ScrollTrigger.refresh();          // the page is longer now: re-measure everything
+        });
+      });
+    });
+
+    // Note: to scroll the reader down automatically after the choice, load
+    // ScrollToPlugin and use  gsap.to(window, { scrollTo: ".after", duration: 1 }).
+    // Left out here on purpose: letting the reader scroll themselves is usually better.
+  </script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>16 · Scrub through a sequence of rendered frames</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    .seq { height: 100svh; display: grid; place-items: center; background: #0b0b0b; color: #fff; position: relative; }
+    .seq canvas { width: min(90vw, 800px); height: auto; aspect-ratio: 8 / 5; border-radius: 8px; }
+    .seq .cap { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); opacity: .8; }
+    .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>16 · Scrub through a sequence of rendered frames</h1>
+    <p>The Apple product-page trick, and the practical way to get <strong>3D</strong> on a scroller
+       without writing 3D code. Render your model as a sequence of still images (Blender: a
+       turntable, something assembling, a camera move; 40 to 120 frames), then draw whichever frame matches the scroll
+       position onto a <code>&lt;canvas&gt;</code>. GSAP tweens a frame number; ScrollTrigger scrubs it.</p>
+    <p>The frames here are placeholders drawn by a script (a stack of blocks growing and turning).
+       Replace <code>frames/frame-001.webp …</code> with yours and change <code>FRAME_COUNT</code>.
+       Keep each frame small: 1200px wide and WebP at quality 75 is plenty.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="spacer"><p>Scroll down. The stack grows as you go.</p></div>
+
+  <section class="seq">
+    <p class="loading">Loading frames…</p>
+    <canvas width="800" height="500" aria-label="A stack of blocks, growing as you scroll"></canvas>
+    <p class="cap">frame <span class="n">1</span> / <span class="total"></span></p>
+  </section>
+
+  <div class="spacer"><p>End.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    const FRAME_COUNT = 40;
+    const frameSrc = (i) => `frames/frame-${String(i + 1).padStart(3, "0")}.webp`;   // frame-001.webp …
+
+    const canvas  = document.querySelector("canvas");
+    const ctx     = canvas.getContext("2d");
+    const nEl     = document.querySelector(".n");
+    const loading = document.querySelector(".loading");
+    document.querySelector(".total").textContent = FRAME_COUNT;
+
+    // 1. Preload every frame into an Image object. The browser decodes them once;
+    //    drawing later is cheap. For 100+ frames, show a progress indicator.
+    const images = [];
+    let loaded = 0;
+    for (let i = 0; i < FRAME_COUNT; i++) {
+      const img = new Image();
+      img.src = frameSrc(i);
+      img.onload = () => { if (++loaded === FRAME_COUNT) ready(); };
+      img.onerror = () => { if (++loaded === FRAME_COUNT) ready(); };   // keep going even if one is missing
+      images.push(img);
+    }
+
+    // 2. The object GSAP will tween. Only the frame number changes.
+    const seq = { frame: 0 };
+
+    function render() {
+      const img = images[seq.frame];
+      if (!img || !img.complete || !img.naturalWidth) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      nEl.textContent = seq.frame + 1;
+    }
+
+    function ready() {
+      loading.remove();
+      render();
+      gsap.to(seq, {
+        frame: FRAME_COUNT - 1,
+        snap: "frame",                 // whole numbers only: there is no frame 12.5
+        ease: "none",
+        onUpdate: render,              // draw whenever the number changes
+        scrollTrigger: {
+          trigger: ".seq",
+          start: "top top",
+          end: "+=200%",
+          pin: true,
+          scrub: 0.5,
+        },
+      });
+    }
+
+    // Reduced motion: the scrub is still fine (nothing moves unless they scroll),
+    // which is why this example does not wrap in matchMedia.
+  </script>
+</body>
+</html>

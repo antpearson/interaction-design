@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>01 · Reveal on scroll</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    /* ---- styles for this example only ---- */
+    .card {
+      max-width: 36rem;
+      margin: 0 auto 3rem;
+      padding: 2rem;
+      background: var(--panel);
+      border-left: 6px solid var(--accent);
+    }
+    .ranks { max-width: 36rem; margin: 0 auto; padding: 0 2rem; list-style: none; }
+    .rank  {
+      display: flex; justify-content: space-between;
+      padding: 0.75rem 1rem; margin-bottom: 0.5rem;
+      background: var(--ink); color: var(--paper);
+    }
+    .pull-stage { position: relative; height: 60svh; overflow: hidden; background: var(--panel); }
+    .car {
+      position: absolute; bottom: 20%; left: 0;
+      width: 160px; height: 60px; border-radius: 10px 30px 8px 8px;
+      background: var(--accent);
+    }
+    .car::after {  /* two wheels, because why not */
+      content: ""; position: absolute; left: 20px; right: 20px; bottom: -14px; height: 28px;
+      background: radial-gradient(circle at 14px 14px, var(--ink) 13px, transparent 14px) left/28px 28px no-repeat,
+                  radial-gradient(circle at 14px 14px, var(--ink) 13px, transparent 14px) right/28px 28px no-repeat;
+    }
+    .pulled {
+      position: absolute; bottom: 55%; left: 10%;
+      max-width: 22rem; padding: 1rem 1.5rem;
+      background: var(--paper); box-shadow: 0 10px 30px rgba(0,0,0,.15);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>01 · Reveal on scroll</h1>
+    <p>The most common move in scrollytelling: something appears when it reaches a line on the screen.
+       Four variants: one element, a loop over many, a staggered list that stays once shown, and a
+       <em>scrubbed</em> reveal where the movement is tied to the scrollbar instead of played once.</p>
+    <p>Change <code>SHOW_MARKERS</code> to <code>true</code> in the script to see the start and end lines ScrollTrigger is using.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="spacer"><p>Scroll down ↓</p></div>
+
+  <!-- VARIANT 1: a single element -->
+  <section class="card reveal-one">
+    <h2>One element</h2>
+    <p>This box fades and rises when its top edge reaches 80% of the way down the window.
+       Scroll back up past it and it reverses, because of <code>toggleActions</code>.</p>
+  </section>
+
+  <div class="spacer short"></div>
+
+  <!-- VARIANT 2: several elements, each with its own trigger -->
+  <section class="card reveal-each"><h2>Each one on its own</h2><p>Three boxes share a class. A loop gives each its own ScrollTrigger, so each fires when <em>it</em> arrives, not when the first one does.</p></section>
+  <section class="card reveal-each"><h2>Second box</h2><p>If you put <code>scrollTrigger</code> on one tween targeting all three, they would all animate together the moment the first came into view. That is almost never what you want.</p></section>
+  <section class="card reveal-each"><h2>Third box</h2><p>Same loop, same tween, different trigger.</p></section>
+
+  <div class="spacer short"></div>
+
+  <!-- VARIANT 3: a staggered list that stays once revealed -->
+  <h2 style="text-align:center">A list, one after another</h2>
+  <ol class="ranks">
+    <li class="rank"><span>First</span><span>appears first</span></li>
+    <li class="rank"><span>Second</span><span>0.12 s later</span></li>
+    <li class="rank"><span>Third</span><span>0.24 s later</span></li>
+    <li class="rank"><span>Fourth</span><span>and so on</span></li>
+    <li class="rank"><span>Fifth</span><span>a ranking, a list of steps,</span></li>
+    <li class="rank"><span>Sixth</span><span>a set of rules,</span></li>
+    <li class="rank"><span>Seventh</span><span>a timeline of dates:</span></li>
+    <li class="rank"><span>Eighth</span><span>anything in order</span></li>
+    <li class="rank"><span>Ninth</span><span>that should arrive in order</span></li>
+    <li class="rank"><span>Tenth</span><span>and then stay put</span></li>
+  </ol>
+
+  <div class="spacer short"></div>
+
+  <!-- VARIANT 4: scrubbed. A block slides in as you scroll, towing a note behind it. -->
+  <h2 style="text-align:center">Tied to the scrollbar</h2>
+  <section class="pull-stage">
+    <div class="car" aria-hidden="true"></div>
+    <div class="pulled">
+      <strong>Towed in</strong>
+      <p>Scroll slowly. The block and this note move with the scrollbar, forwards and backwards, rather than playing once. A vehicle, a boat, a figure walking: same tween.</p>
+    </div>
+  </section>
+
+  <div class="spacer"><p>End.</p></div>
+
+  <!-- GSAP core and the ScrollTrigger plugin. Put these before your own script. -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script>
+    // Tell GSAP the plugin exists. Forgetting this line is the single most common bug.
+    gsap.registerPlugin(ScrollTrigger);
+
+    const SHOW_MARKERS = false;   // flip to true while you are working out start/end positions
+
+    // gsap.matchMedia() lets you give different animations to different conditions.
+    // Here we only animate for readers who have NOT asked for reduced motion.
+    // Anything created inside this function is cleaned up automatically if the
+    // condition stops matching. Every example in this set uses the same wrapper.
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+
+      // ----- VARIANT 1: one element ---------------------------------------
+      gsap.from(".reveal-one", {
+        y: 40,                 // start 40px lower than its resting place...
+        autoAlpha: 0,          // ...and invisible. autoAlpha = opacity + visibility,
+                               // so it is also hidden from screen readers while invisible.
+        duration: 0.8,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: ".reveal-one",
+          start: "top 80%",    // "when the TOP of the trigger hits 80% down the VIEWPORT"
+          // end is only needed for toggleActions' third and fourth slots; default is "bottom top".
+          toggleActions: "play none none reverse",
+          //              ^onEnter ^onLeave ^onEnterBack ^onLeaveBack
+          // Other useful combinations:
+          //   "play none none none"      play once, never undo
+          //   "play reverse play reverse" undo whenever it leaves either way
+          markers: SHOW_MARKERS,
+        },
+      });
+
+      // ----- VARIANT 2: a loop, one trigger each --------------------------
+      gsap.utils.toArray(".reveal-each").forEach((box) => {
+        gsap.from(box, {
+          y: 40,
+          autoAlpha: 0,
+          duration: 0.8,
+          scrollTrigger: {
+            trigger: box,          // THIS box, not the class
+            start: "top 80%",
+            toggleActions: "play none none reverse",
+            markers: SHOW_MARKERS,
+          },
+        });
+      });
+
+      // ----- VARIANT 3: staggered list, revealed once ---------------------
+      gsap.from(".rank", {
+        x: -30,
+        autoAlpha: 0,
+        duration: 0.5,
+        stagger: 0.12,           // each item starts 0.12s after the previous one
+        scrollTrigger: {
+          trigger: ".ranks",     // the whole list is the trigger, so the stagger runs as one
+          start: "top 70%",
+          once: true,            // fire once and throw the trigger away. Nothing to undo.
+          markers: SHOW_MARKERS,
+        },
+      });
+
+      // ----- VARIANT 4: scrubbed ------------------------------------------
+      // scrub links the tween's progress to the scrollbar between start and end.
+      // No duration, no toggleActions: the reader IS the playhead.
+      const pull = gsap.timeline({
+        scrollTrigger: {
+          trigger: ".pull-stage",
+          start: "top 80%",      // begin when the stage's top is 80% down the window
+          end: "bottom 40%",     // finish when its bottom is 40% down the window
+          scrub: 1,              // 1 = take about a second to catch up. true = instant.
+          markers: SHOW_MARKERS,
+        },
+      });
+      pull
+        .fromTo(".car", { x: -200 }, { x: () => window.innerWidth * 0.55, ease: "none" }, 0)
+        .fromTo(".pulled", { x: -500, autoAlpha: 0 }, { x: 0, autoAlpha: 1, ease: "none" }, 0.2);
+      // The x value is a function so it is re-read if the window is resized.
+    });
+
+    // Optional: if your page has images without width/height attributes, the
+    // layout shifts as they load and every start/end line moves. Either give
+    // images dimensions (best) or call this once everything has loaded:
+    window.addEventListener("load", () => ScrollTrigger.refresh());
+  </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>17 · Transitions between scenes</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    body { transition: none; }   /* GSAP handles the background colour */
+
+    /* A. Crossfade: two full-screen slides stacked in one pinned frame. */
+    .frame { position: relative; height: 100svh; overflow: hidden; }
+    .slide { position: absolute; inset: 0; display: grid; place-items: center; padding: 2rem; text-align: center; }
+    .slide.one { background: #1a1a1a; color: #fff; }
+    .slide.two { background: #f2f2f2; }
+    .slide .inner { max-width: 34rem; }
+
+    /* B. Sections that each ask for a background colour. */
+    .tone { min-height: 100svh; display: grid; place-items: center; padding: 2rem; text-align: center; color: #fff; }
+
+    /* C. Sparkle overlay. */
+    .sparkle-host { position: relative; min-height: 100svh; display: grid; place-items: center; background: #120a1e; color: #fff; overflow: hidden; }
+    .spark { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px 2px #fff; pointer-events: none; }
+
+    /* D. Fade to black between two sections. */
+    .veil { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 5; }
+    .light { min-height: 100svh; display: grid; place-items: center; }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>17 · Transitions between scenes</h1>
+    <p>Four ways to get from one part of the story to the next.
+       <strong>A.</strong> Crossfade: the title slide fades out while the next fades in, inside one pinned frame.
+       <strong>B.</strong> Background colour: each section asks for its own, and the page tweens to it on entry.
+       <strong>C.</strong> A sparkle burst from the centre to the edges when a section arrives.
+       <strong>D.</strong> Fade to black: a fixed veil whose opacity is scrubbed between two sections.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="spacer"><p>Scroll down ↓</p></div>
+
+  <!-- A. CROSSFADE -->
+  <section class="frame">
+    <div class="slide one"><div class="inner"><h2>The title</h2><p>a one-line standfirst</p></div></div>
+    <div class="slide two"><div class="inner"><h2>Chapter one</h2><p>The title has drifted up and out while this slid in underneath it. One pinned frame, two slides, one timeline.</p></div></div>
+  </section>
+
+  <!-- B. BACKGROUND COLOUR PER SECTION -->
+  <section class="tone" data-bg="#c0392b"><h2>Red section</h2></section>
+  <section class="tone" data-bg="#2d6a4f"><h2>Green section</h2></section>
+  <section class="tone" data-bg="#1f3a93"><h2>Blue section</h2></section>
+
+  <!-- C. SPARKLE -->
+  <section class="sparkle-host"><h2>✦ Interlude ✦</h2></section>
+
+  <!-- D. FADE TO BLACK -->
+  <section class="light" style="background:#f2f2f2"><h2>Before</h2></section>
+  <section class="light" style="background:#0b0b0b;color:#fff"><h2>After.</h2></section>
+  <div class="veil" aria-hidden="true"></div>
+
+  <div class="spacer"><p>End.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+
+      // ---- A. CROSSFADE -------------------------------------------------------
+      gsap.timeline({
+        scrollTrigger: { trigger: ".frame", start: "top top", end: "+=150%", pin: true, scrub: 1 },
+      })
+        .to(".slide.one .inner", { y: -40, autoAlpha: 0, duration: 1 })      // title drifts up and out
+        .fromTo(".slide.two", { autoAlpha: 0 }, { autoAlpha: 1, duration: 1 }, 0.5)   // next fades in, overlapping
+        .from(".slide.two .inner", { y: 40, duration: 1 }, 0.5);
+
+      // ---- B. BACKGROUND COLOUR -----------------------------------------------
+      // Default body colour so it can tween back when you scroll above the first one.
+      const base = getComputedStyle(document.body).backgroundColor;
+      gsap.utils.toArray(".tone").forEach((section, i, all) => {
+        const prev = i === 0 ? base : all[i - 1].dataset.bg;
+        ScrollTrigger.create({
+          trigger: section,
+          start: "top 50%",
+          onEnter:     () => gsap.to("body", { backgroundColor: section.dataset.bg, duration: 0.6, overwrite: "auto" }),
+          onLeaveBack: () => gsap.to("body", { backgroundColor: prev, duration: 0.6, overwrite: "auto" }),
+        });
+      });
+      // The sections themselves are transparent, so the body colour shows through.
+      gsap.set(".tone", { backgroundColor: "transparent" });
+      // Reset when the user scrolls past the last toned section.
+      ScrollTrigger.create({
+        trigger: ".sparkle-host", start: "top 50%",
+        onEnter: () => gsap.to("body", { backgroundColor: base, duration: 0.6, overwrite: "auto" }),
+        onLeaveBack: () => gsap.to("body", { backgroundColor: "#1f3a93", duration: 0.6, overwrite: "auto" }),
+      });
+
+      // ---- C. SPARKLE BURST ---------------------------------------------------
+      const host = document.querySelector(".sparkle-host");
+      function sparkle() {
+        const w = host.clientWidth, h = host.clientHeight;
+        for (let i = 0; i < 60; i++) {
+          const s = document.createElement("span");
+          s.className = "spark";
+          host.appendChild(s);
+          const angle = gsap.utils.random(0, Math.PI * 2);
+          const dist  = gsap.utils.random(0.2, 0.7) * Math.max(w, h);
+          gsap.fromTo(s,
+            { x: w / 2, y: h / 2, scale: 0, opacity: 1 },
+            {
+              x: w / 2 + Math.cos(angle) * dist,
+              y: h / 2 + Math.sin(angle) * dist,
+              scale: gsap.utils.random(0.5, 2),
+              opacity: 0,
+              duration: gsap.utils.random(0.8, 1.6),
+              delay: gsap.utils.random(0, 0.3),
+              ease: "power2.out",
+              onComplete: () => s.remove(),       // clean up after yourself
+            });
+        }
+      }
+      ScrollTrigger.create({ trigger: host, start: "top 60%", onEnter: sparkle, onEnterBack: sparkle });
+
+      // ---- D. FADE TO BLACK ---------------------------------------------------
+      // The veil goes 0 → 1 → 0 across the boundary between the two sections.
+      gsap.timeline({
+        scrollTrigger: {
+          trigger: ".light:last-of-type",
+          start: "top 90%",          // start darkening as the dark section first appears
+          end: "top 10%",            // fully clear once it fills the screen
+          scrub: true,
+        },
+      })
+        .to(".veil", { opacity: 1, duration: 1, ease: "none" })
+        .to(".veil", { opacity: 0, duration: 1, ease: "none" });
+    });
+  </script>
+</body>
+</html>

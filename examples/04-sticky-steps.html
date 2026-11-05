@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>04 · Sticky picture, scrolling steps</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    /* This is the .scene pattern from the starter stylesheet, with JavaScript
+       added so the picture CHANGES as each step arrives. CSS does the sticking;
+       GSAP does the changing. */
+    .scene { position: relative; }
+    .scene-sticky {
+      position: sticky; top: 0; height: 100svh;
+      display: grid; place-items: center;
+      background: var(--ink);
+    }
+    .scene-sticky svg { width: min(70vw, 480px); height: auto; }
+
+    /* Four layers of the drawing. They are switched on one at a time. */
+    .layer { opacity: 0; }
+
+    .scene-steps {
+      position: relative;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 60svh;                     /* how far the reader scrolls between steps */
+      padding: 30svh 0 50svh;
+    }
+    .step {
+      max-width: 26rem; padding: 1rem 1.5rem;
+      background: var(--paper);
+      border-left: 6px solid transparent;
+      transition: border-color .3s;
+    }
+    .step.is-active { border-color: var(--accent); }
+    .scene-caption {
+      position: absolute; left: 50%; bottom: 2rem; transform: translateX(-50%);
+      color: var(--paper); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; font-size: .9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>04 · Sticky picture, scrolling steps</h1>
+    <p>The "step" pattern used by the BBC, the Pudding and most newsroom scrollytelling. A picture
+       holds still while short blocks of text scroll past it, and <strong>each block changes the picture
+       when it reaches the middle of the screen</strong>. One <code>ScrollTrigger.create()</code> per step,
+       no scrubbing, so the reader can stop and read.</p>
+    <p>Here the "picture" is an SVG with four layers that build up a house. Yours might be four photographs
+       stacked on top of each other, a map with a route that extends, a diagram that gains parts, or a
+       scene where things light up.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="spacer"><p>Scroll down ↓</p></div>
+
+  <section class="scene">
+    <div class="scene-sticky">
+      <svg viewBox="0 0 400 300" role="img" aria-label="A house drawn in four stages: ground, walls, roof, smoke">
+        <!-- the ground, always there -->
+        <rect x="0" y="240" width="400" height="60" fill="#2d6a4f"/>
+        <!-- one layer per step -->
+        <g class="layer" data-layer="0"><rect x="100" y="225" width="200" height="20" fill="#8d8d8d"/></g>
+        <g class="layer" data-layer="1"><rect x="110" y="130" width="180" height="95" fill="#f4e1b5"/><rect x="185" y="170" width="30" height="55" fill="#8d6e3c"/><rect x="130" y="150" width="30" height="30" fill="#7fc8f8"/><rect x="240" y="150" width="30" height="30" fill="#7fc8f8"/></g>
+        <g class="layer" data-layer="2"><polygon points="95,135 200,60 305,135" fill="#c0392b"/><rect x="250" y="80" width="20" height="40" fill="#555"/></g>
+        <g class="layer" data-layer="3"><circle cx="262" cy="62" r="8" fill="#ddd"/><circle cx="272" cy="46" r="11" fill="#ddd"/><circle cx="286" cy="26" r="14" fill="#ddd"/></g>
+      </svg>
+      <p class="scene-caption">Step 1 of 4</p>
+    </div>
+
+    <div class="scene-steps">
+      <!-- data-step is the layer index to show when this step is centred -->
+      <div class="step" data-step="0"><h3>Foundations</h3><p>Nothing to look at yet, which is the point: the reader sees the first change happen, so they learn that scrolling does something.</p></div>
+      <div class="step" data-step="1"><h3>Walls</h3><p>The second layer switches on when this block reaches the middle of the window. Scroll back up and it switches off again.</p></div>
+      <div class="step" data-step="2"><h3>Roof</h3><p>Layers accumulate here, which suits a thing being built. The script has a one-word change if you want only the current layer showing.</p></div>
+      <div class="step" data-step="3"><h3>Smoke</h3><p>Done. The picture stays on screen for as long as there are steps beside it, then scrolls away with the rest of the page.</p></div>
+    </div>
+  </section>
+
+  <div class="spacer"><p>End of the scene.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    const layers  = gsap.utils.toArray(".layer");
+    const steps   = gsap.utils.toArray(".step");
+    const caption = document.querySelector(".scene-caption");
+
+    // Show layers up to n, fade the rest. Called whenever the active step changes.
+    // Layers ACCUMULATE here (everything up to the current one stays on), which
+    // suits something being built. For "only the current one", change `i <= n` to `i === n`.
+    function showUpTo(n) {
+      layers.forEach((layer, i) => {
+        gsap.to(layer, { opacity: i <= n ? 1 : 0, duration: 0.5, overwrite: "auto" });
+      });
+      steps.forEach((s, i) => s.classList.toggle("is-active", i === n));
+      caption.textContent = `Step ${n + 1} of ${steps.length}`;
+    }
+
+    // One trigger per step. No animation attached: we just want to know when
+    // the step's middle region is crossing the middle of the window.
+    steps.forEach((step, i) => {
+      ScrollTrigger.create({
+        trigger: step,
+        start: "top 60%",          // step's top passes 60% down the window → it is "the one"
+        end: "bottom 40%",
+        onEnter:     () => showUpTo(i),  // scrolling down into it
+        onEnterBack: () => showUpTo(i),  // scrolling back up into it
+        // markers: true,
+      });
+    });
+
+    // Before the first step arrives nothing should be lit.
+    showUpTo(-1);
+
+    // Note: if the reader loads the page already scrolled (a refresh halfway down),
+    // ScrollTrigger fires the right callbacks on creation, so the state is correct.
+  </script>
+</body>
+</html>

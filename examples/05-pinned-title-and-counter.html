@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>05 · Pinned title, depth counter, darkening background</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    .sea {
+      position: relative;
+      background: #7fc8f8;              /* the start colour. GSAP tweens it to near-black. */
+      color: #fff;
+      min-height: 600svh;                /* a long descent */
+    }
+    .sea-title {
+      text-align: center; padding: 2rem;
+      text-shadow: 0 2px 10px rgba(0,0,0,.3);
+    }
+    .creature {
+      max-width: 22rem; margin: 0 auto; padding: 1rem 1.5rem;
+      background: rgba(0,0,0,.25); border-radius: 8px;
+      position: absolute; left: 50%; transform: translateX(-50%);
+    }
+    /* The counter is fixed to the bottom while the .sea section is on screen. */
+    .depth {
+      position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
+      font: 700 1rem/1 ui-monospace, monospace; letter-spacing: .1em;
+      padding: .6rem 1rem; background: rgba(0,0,0,.5); color: #fff; border-radius: 999px;
+      opacity: 0; pointer-events: none;
+    }
+    .pot { text-align: center; padding: 6rem 2rem; }
+    .pot .big { font-size: clamp(3rem, 10vw, 7rem); font-weight: 800; letter-spacing: -.02em; }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>05 · Pinned title, depth counter, darkening background</h1>
+    <p>Three things from neal.fun's <em>Deep Sea</em>, built the GSAP way. The section title stays pinned
+       at the top for a while and then scrolls off. A counter at the bottom reads out how deep you are,
+       driven by scroll progress. The background colour darkens the further down you go.</p>
+    <p>At the end: a second counter that <strong>counts up once</strong> when it enters the screen (a sum
+       of money, a population, a score, a year).</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="spacer"><p>Scroll down to dive ↓</p></div>
+
+  <section class="sea">
+    <h2 class="sea-title">The descent</h2>
+
+    <!-- Things at depths, positioned absolutely down the long section. -->
+    <div class="creature" style="top: 60svh"><strong>6 m</strong> · The light is still good. Most of the sea's life is up here.</div>
+    <div class="creature" style="top: 200svh"><strong>200 m</strong> · The twilight zone. Enough light to see by, not enough for plants.</div>
+    <div class="creature" style="top: 350svh"><strong>1,000 m</strong> · Midnight. No sunlight reaches this far down.</div>
+    <div class="creature" style="top: 520svh"><strong>9,432 m</strong> · The bottom of the story.</div>
+  </section>
+
+  <div class="depth" aria-live="polite">0 M DEEP</div>
+
+  <section class="pot">
+    <p>The total is now</p>
+    <div class="big"><span class="count" data-to="10000">0</span></div>
+    <p>and counting. This counted up once when it came into view.</p>
+  </section>
+
+  <div class="spacer"><p>End.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    const depthEl = document.querySelector(".depth");
+
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+
+      // 1. PIN THE TITLE. pinSpacing: false means no gap is added below it:
+      //    the content underneath slides up behind the pinned title.
+      ScrollTrigger.create({
+        trigger: ".sea-title",
+        start: "top top",
+        endTrigger: ".sea",        // measure the end against a different element...
+        end: "bottom bottom",      // ...so it stays pinned until the whole .sea section has passed
+        pin: true,
+        pinSpacing: false,
+      });
+
+      // 2. THE COUNTER. GSAP can tween any property of any object, not just DOM
+      //    elements. So we tween a plain number and write it into the page on every update.
+      const depth = { m: 0 };
+      gsap.to(depth, {
+        m: 9432,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".sea",
+          start: "top top",
+          end: "bottom bottom",
+          scrub: true,
+          onUpdate: () => {
+            // toLocaleString puts the thousands separator in for the reader's locale.
+            depthEl.textContent = Math.round(depth.m).toLocaleString("en-GB") + " M DEEP";
+          },
+          // Show the counter only while the sea is on screen.
+          onToggle: (self) => gsap.to(depthEl, { opacity: self.isActive ? 1 : 0, duration: 0.3 }),
+        },
+      });
+
+      // 3. THE BACKGROUND. A colour tween scrubbed across the same distance.
+      gsap.to(".sea", {
+        backgroundColor: "#02030a",
+        ease: "none",
+        scrollTrigger: { trigger: ".sea", start: "top top", end: "bottom bottom", scrub: true },
+      });
+
+      // 4. COUNT UP ONCE. Plays when the element enters, in a fixed time, and never again.
+      gsap.utils.toArray(".count").forEach((el) => {
+        const target = Number(el.dataset.to);
+        const obj = { n: 0 };
+        gsap.to(obj, {
+          n: target,
+          duration: 2,
+          ease: "power1.out",           // fast then slowing, like a till
+          snap: { n: 1 },               // whole numbers only
+          onUpdate: () => { el.textContent = obj.n.toLocaleString("en-GB"); },
+          scrollTrigger: { trigger: el, start: "top 80%", once: true },
+        });
+      });
+    });
+
+    // Reduced motion: just show the final values.
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      document.querySelectorAll(".count").forEach((el) => (el.textContent = Number(el.dataset.to).toLocaleString("en-GB")));
+    });
+  </script>
+</body>
+</html>

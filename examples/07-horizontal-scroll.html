@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>07 · A section that scrolls sideways</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    .sideways { overflow: hidden; }          /* hides the panels waiting off to the right */
+    .track {
+      display: flex;                          /* panels in a row */
+      height: 100svh;
+      width: max-content;                     /* as wide as all its panels together */
+    }
+    .panel {
+      flex: 0 0 100vw;                        /* each panel is exactly one screen wide */
+      display: grid; place-items: center; padding: 2rem; text-align: center;
+    }
+    .panel:nth-child(1) { background: #1a1a1a; color: #fff; }
+    .panel:nth-child(2) { background: #c0392b; color: #fff; }
+    .panel:nth-child(3) { background: #f2f2f2; }
+    .panel:nth-child(4) { background: #2d6a4f; color: #fff; }
+    .panel .inner { max-width: 30rem; }
+    .panel .inner p { opacity: 0; }           /* revealed by the containerAnimation trigger */
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>07 · A section that scrolls sideways</h1>
+    <p>The reader keeps scrolling down, but the section moves left. Useful for a sequence of
+       options, a filmstrip of photos, a menu that "slides to the left" to reveal more.
+       The track is pinned and translated by exactly its overflow, so the distance is always right.</p>
+    <p>The second half shows <code>containerAnimation</code>: how to trigger something <em>inside</em> a
+       horizontal panel when that panel arrives, which normal ScrollTriggers cannot measure.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="spacer"><p>Scroll down. The next section goes sideways.</p></div>
+
+  <section class="sideways">
+    <div class="track">
+      <div class="panel"><div class="inner"><h2>One</h2><p>Each panel is exactly one screen wide. This paragraph fades in when its panel reaches the middle.</p></div></div>
+      <div class="panel"><div class="inner"><h2>Two</h2><p>The reader is still scrolling down. The track is moving left by the same distance.</p></div></div>
+      <div class="panel"><div class="inner"><h2>Three</h2><p>Add as many panels as you like; the script measures the track and sets the distance itself.</p></div></div>
+      <div class="panel"><div class="inner"><h2>Four</h2><p>On a narrow screen, or for readers who want less motion, the panels just stack.</p></div></div>
+    </div>
+  </section>
+
+  <div class="spacer"><p>Back to normal scrolling.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    const track  = document.querySelector(".track");
+    const panels = gsap.utils.toArray(".panel");
+
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference) and (min-width: 700px)", () => {
+
+      // How far the track must move: its full width minus one screen.
+      const distance = () => track.scrollWidth - window.innerWidth;
+
+      const slide = gsap.to(track, {
+        x: () => -distance(),
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".sideways",
+          start: "top top",
+          end: () => "+=" + distance(),   // scroll down by the same amount it moves left: 1:1 feel
+          pin: true,
+          scrub: 1,
+          invalidateOnRefresh: true,       // recalculate both functions on resize
+          snap: 1 / (panels.length - 1),   // settle on whole panels. Remove for free scrolling.
+          // markers: true,
+        },
+      });
+
+      // Reveal the paragraph in each panel as that panel reaches the centre.
+      // Because the panels move horizontally inside a pinned section, we tell the
+      // trigger which animation is moving them: containerAnimation.
+      panels.forEach((panel) => {
+        gsap.to(panel.querySelector("p"), {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          scrollTrigger: {
+            trigger: panel,
+            containerAnimation: slide,
+            start: "left 60%",             // note: LEFT and RIGHT, not top and bottom
+            toggleActions: "play none none reverse",
+          },
+        });
+      });
+    });
+
+    // On narrow screens and for reduced motion, the panels just stack vertically.
+    mm.add("(prefers-reduced-motion: reduce), (max-width: 699px)", () => {
+      gsap.set(track, { flexDirection: "column", height: "auto", width: "auto" });
+      gsap.set(panels, { flexBasis: "auto", minHeight: "60svh" });
+      gsap.set(".panel p", { opacity: 1 });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>10 · Typewriter text and split-text titles</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    .dark { background: #0b0b0b; color: #fff; }
+
+    /* Typewriter: a block with a blinking bar after it. */
+    .typed { max-width: 36rem; margin: 0 auto; padding: 4rem 2rem; min-height: 14rem; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+    .typed .text::after {
+      content: "▌"; margin-left: 2px; color: var(--accent);
+      animation: blink 1s steps(1) infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Split title: each character is wrapped by SplitText; overflow hidden on
+       the parent lets letters rise up from below an invisible line. */
+    .split-title { font-size: clamp(3rem, 12vw, 9rem); font-weight: 800; letter-spacing: -.02em; line-height: 1; overflow: hidden; }
+    .glow { text-shadow: 0 0 20px rgba(255,255,255,.4), 0 0 60px rgba(255,255,255,.2); }
+
+    .words { max-width: 36rem; margin: 0 auto; padding: 4rem 2rem; font-size: 1.4rem; }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>10 · Typewriter text and split-text titles</h1>
+    <p>Two plugins for text. <code>TextPlugin</code> types a string into an element letter by letter.
+       <code>SplitText</code> breaks existing text into characters, words or lines so each can be animated
+       on its own (both are free since GSAP 3.13). Each is started by a ScrollTrigger when it enters the screen.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="spacer"><p>Scroll down ↓</p></div>
+
+  <!-- 1. TYPEWRITER. The real text is in data-text; the element starts empty. -->
+  <section class="typed">
+    <h2>Typewriter</h2>
+    <p class="text" data-text="This paragraph is typed out letter by letter when it comes into view. The speed is set per letter, so a longer sentence simply takes longer. The blinking bar is CSS."></p>
+  </section>
+
+  <div class="spacer short"></div>
+
+  <!-- 2. SPLIT TITLE: letters rise in one after another, then pulse. -->
+  <section class="screen dark">
+    <h2 class="split-title glow">CHAPTER TWO.</h2>
+  </section>
+
+  <!-- 3. WORDS: a paragraph where each word fades in, scrubbed to scroll. -->
+  <section class="words">
+    <h2>Word by word, scrubbed</h2>
+    <p class="split-words">Scroll slowly and the words arrive one at a time. Scroll back and they leave. This is a good way to pace a key sentence so the reader cannot skim it.</p>
+  </section>
+
+  <div class="spacer"><p>End.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/TextPlugin.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/SplitText.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger, TextPlugin, SplitText);
+
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+
+      // ---- 1. TYPEWRITER ---------------------------------------------------
+      document.querySelectorAll(".text[data-text]").forEach((el) => {
+        const full = el.dataset.text;
+        gsap.to(el, {
+          text: { value: full, delimiter: "" },   // "" = character by character. " " = word by word.
+          duration: full.length * 0.035,            // about 35 ms a letter, whatever the length
+          ease: "none",                             // typing is linear
+          scrollTrigger: { trigger: el, start: "top 75%", once: true },
+        });
+      });
+
+      // ---- 2. SPLIT TITLE ----------------------------------------------------
+      // SplitText.create wraps each character in a <div>. We animate those.
+      const split = SplitText.create(".split-title", { type: "chars" });
+      gsap.timeline({ scrollTrigger: { trigger: ".split-title", start: "top 70%", toggleActions: "play none none reverse" } })
+        .from(split.chars, {
+          yPercent: 110,         // start fully below the line (hidden by overflow: hidden)
+          autoAlpha: 0,
+          duration: 0.6,
+          ease: "power3.out",
+          stagger: 0.05,
+        })
+        // then a slow glow pulse that repeats for as long as the page is open
+        .to(".split-title", { textShadow: "0 0 30px rgba(255,255,255,.9), 0 0 80px rgba(255,255,255,.5)", duration: 1.2, yoyo: true, repeat: -1, ease: "sine.inOut" });
+
+      // ---- 3. WORDS, SCRUBBED -------------------------------------------------
+      const words = SplitText.create(".split-words", { type: "words" });
+      gsap.from(words.words, {
+        autoAlpha: 0.15,         // dim, not gone, so the shape of the paragraph is still there
+        y: 10,
+        stagger: 0.1,
+        ease: "none",
+        scrollTrigger: { trigger: ".split-words", start: "top 70%", end: "bottom 50%", scrub: true },
+      });
+
+      // Cleanup for matchMedia: if the condition changes, put the text back together.
+      return () => { split.revert(); words.revert(); };
+    });
+
+    // Reduced motion: just show the text.
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      document.querySelectorAll(".text[data-text]").forEach((el) => (el.textContent = el.dataset.text));
+    });
+  </script>
+</body>
+</html>

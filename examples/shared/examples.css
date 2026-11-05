@@ -1,0 +1,124 @@
+/* =====================================================================
+   Shared styles for the GSAP examples
+
+   Every example page links this file for the basics (type, colours,
+   the explainer bar at the top). Anything specific to one example is
+   in a <style> block inside that example, next to the HTML it styles,
+   so you can read one file top to bottom and see everything it needs.
+
+   These colours deliberately match the starter stylesheet in
+   css/style.css, so a technique you copy out of here drops straight
+   into your own page.
+   ===================================================================== */
+
+:root {
+  --ink:    #1a1a1a;
+  --paper:  #ffffff;
+  --accent: #c0392b;
+  --muted:  #6b6b6b;
+  --panel:  #f2f2f2;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: auto; }   /* GSAP does its own smoothing; leave this alone */
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+img, svg, video, canvas { display: block; max-width: 100%; }
+
+a { color: var(--accent); }
+
+h1, h2, h3 { line-height: 1.1; margin: 0 0 0.5em; }
+h1 { font-size: clamp(2rem, 6vw, 3.5rem); }
+h2 { font-size: clamp(1.5rem, 4vw, 2.25rem); }
+
+/* ---------------------------------------------------------------------
+   THE EXPLAINER BAR
+   The note at the top of every example: what it shows, what to look for.
+   Not part of the technique. Delete it when you copy an example.
+   --------------------------------------------------------------------- */
+
+.explainer {
+  padding: 1.5rem 2rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 1rem;
+}
+.explainer h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+.explainer p  { max-width: 60rem; margin: 0.25rem 0; }
+.explainer a  { color: #ffb3a7; }
+.explainer code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: rgba(255,255,255,0.12);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+.explainer .back { display: inline-block; margin-top: 0.5rem; font-size: 0.9rem; }
+
+/* ---------------------------------------------------------------------
+   SPACERS AND LAYOUT HELPERS
+   Full-screen sections before and after a scene, so there is room to
+   scroll into it and out of it. Your real page has chapters here.
+   --------------------------------------------------------------------- */
+
+.spacer {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted);
+}
+.spacer.short { min-height: 50svh; }
+
+.prose {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+}
+
+.screen {               /* one full screen, content centred */
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* A generic button. */
+.btn {
+  font: inherit;
+  font-weight: 700;
+  padding: 0.75em 1.5em;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.btn:hover, .btn:focus-visible { background: var(--accent); border-color: var(--accent); color: #fff; outline: none; }
+
+/* Hide visually but keep for screen readers. */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------
+   REDUCED MOTION
+   Readers who have asked their system for less motion should not get a
+   page that jumps about. Every example also checks this in JavaScript
+   with gsap.matchMedia(); this CSS is the belt to that braces.
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}

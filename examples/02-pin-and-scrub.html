@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>02 · Pin a scene and scrub a timeline</title>
+  <link rel="stylesheet" href="shared/examples.css">
+  <style>
+    /* The stage is one screen tall. ScrollTrigger will hold it in place while
+       the reader scrolls through an invisible distance "behind" it. */
+    .stage {
+      position: relative;
+      height: 100svh;
+      overflow: hidden;
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .ball {
+      position: absolute; top: 50%; left: 10%;
+      width: 80px; height: 80px; margin: -40px 0 0 -40px;
+      border-radius: 50%; background: var(--accent);
+    }
+    .caption {
+      position: absolute; left: 50%; bottom: 12%;
+      transform: translateX(-50%);
+      max-width: 30rem; padding: 1rem 1.5rem; text-align: center;
+      background: rgba(255,255,255,.1); border-radius: 8px;
+      opacity: 0;                           /* captions start hidden */
+    }
+    .progress {
+      position: absolute; top: 0; left: 0; height: 6px; width: 100%;
+      background: var(--accent); transform-origin: left; transform: scaleX(0);
+    }
+    .readout { position: absolute; top: 1rem; right: 1rem; font: 700 0.9rem ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+
+  <header class="explainer">
+    <h1>02 · Pin a scene and scrub a timeline</h1>
+    <p>The engine behind most scrollytelling. One screen-sized "stage" is <strong>pinned</strong>, and a
+       GSAP <strong>timeline</strong> of several beats is <strong>scrubbed</strong> by the scrollbar across a
+       set distance. The long sequence in example 08 and the decision in example 12 are both built on this.</p>
+    <p>Look for <code>pin: true</code>, <code>end: "+=300%"</code> and <code>scrub: 1</code>, and the way
+       beats are placed on the timeline with labels.</p>
+    <a class="back" href="index.html">← All examples</a>
+  </header>
+
+  <div class="spacer"><p>Scroll down. The dark panel will stick while you keep scrolling.</p></div>
+
+  <section class="stage">
+    <div class="progress" aria-hidden="true"></div>
+    <div class="readout">progress 0.00</div>
+    <div class="ball" aria-hidden="true"></div>
+    <p class="caption" data-beat="1">Beat one. The ball crosses to the right.</p>
+    <p class="caption" data-beat="2">Beat two. It grows and changes colour.</p>
+    <p class="caption" data-beat="3">Beat three. It drops out of frame and the scene is over.</p>
+  </section>
+
+  <div class="spacer"><p>The pin has released. Normal scrolling resumes.</p></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+
+      // One timeline, one ScrollTrigger. The timeline's total length is spread
+      // across the scroll distance, so durations here are RELATIVE: a 1-second
+      // tween takes twice as much scroll as a 0.5-second one.
+      const tl = gsap.timeline({
+        defaults: { ease: "none" },     // linear is right for scrubbed motion
+        scrollTrigger: {
+          trigger: ".stage",
+          start: "top top",             // pin the moment the stage's top hits the window's top
+          end: "+=300%",                // ...and hold it for three screen-heights of scrolling.
+                                        // Longer = slower, more room to read. Try "+=150%".
+          pin: true,                    // hold the stage still
+          scrub: 1,                     // smooth link to the scrollbar (1 second of lag)
+          anticipatePin: 1,             // stops a one-frame jump on fast scrolls in some browsers
+          // snap: "labels",            // uncomment to make the scroll settle on each beat
+          markers: false,
+          onUpdate: (self) => {         // self.progress is 0 → 1 across start → end
+            document.querySelector(".readout").textContent = "progress " + self.progress.toFixed(2);
+          },
+        },
+      });
+
+      const captions = gsap.utils.toArray(".caption");
+
+      tl
+        // ---- beat 1 ----
+        .addLabel("beat1")
+        .to(captions[0], { opacity: 1, duration: 0.3 })
+        .to(".ball", { left: "90%", duration: 1 })
+        .to(captions[0], { opacity: 0, duration: 0.3 })
+
+        // ---- beat 2 ----
+        .addLabel("beat2")
+        .to(captions[1], { opacity: 1, duration: 0.3 })
+        .to(".ball", { scale: 3, backgroundColor: "#ffffff", duration: 1 })
+        .to(captions[1], { opacity: 0, duration: 0.3 })
+
+        // ---- beat 3 ----
+        .addLabel("beat3")
+        .to(captions[2], { opacity: 1, duration: 0.3 })
+        .to(".ball", { y: "60svh", scale: 0.5, duration: 1 })
+        .to(captions[2], { opacity: 0, duration: 0.3 })
+
+        // The bar is a separate tween placed at time 0 that runs the full length.
+        // Passing 0 as the position parameter means "start at the very beginning".
+        .to(".progress", { scaleX: 1, duration: tl.duration() }, 0);
+
+      // Things worth knowing:
+      // * Give the pinned element a solid background, or the next section shows through.
+      // * Do not pin something inside a parent that has transform, filter or
+      //   overflow: hidden. Pinning uses position: fixed, and those break it.
+      // * Nested timelines work: build one per beat, then tl.add(beatOne).add(beatTwo).
+    });
+  </script>
+</body>
+</html>
